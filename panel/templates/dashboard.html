@@ -21,17 +21,21 @@
         {% set personalizados = bots | selectattr("has_custom_personality") | list | length %}
         {% set pct_activos = (activos / total_bots * 100) | round(0) | int if total_bots else 0 %}
         {% set pct_personalizados = (personalizados / total_bots * 100) | round(0) | int if total_bots else 0 %}
-        {% set pct_7d = ([events_7d * 8, 100] | min) if events_7d else 0 %}
+        {% set pct_7d = (events_7d / total_events * 100) | round(0) | int if total_events else 0 %}
+        {% set top_bots = bots | sort(attribute="events", reverse=true) %}
 
         {# ---------- Fila 1: tarjetas de info con anillo de progreso ---------- #}
         <div class="info-grid">
             <div class="info-card">
                 <div class="info-card-main">
-                    <span class="info-card-ico tone-indigo-soft">
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="4" y="8" width="16" height="12" rx="2"/><path d="M12 8V4M9 4h6"/><circle cx="9" cy="14" r="1"/><circle cx="15" cy="14" r="1"/><path d="M2 12h2M20 12h2"/>
-                        </svg>
-                    </span>
+                    <div class="info-card-top">
+                        <span class="info-card-ico tone-indigo-soft">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="4" y="8" width="16" height="12" rx="2"/><path d="M12 8V4M9 4h6"/><circle cx="9" cy="14" r="1"/><circle cx="15" cy="14" r="1"/><path d="M2 12h2M20 12h2"/>
+                            </svg>
+                        </span>
+                        <button type="button" class="card-menu" tabindex="-1">⋮</button>
+                    </div>
                     <div class="info-card-value">{{ total_bots }}</div>
                     <div class="info-card-label">Bots del equipo</div>
                 </div>
@@ -40,9 +44,12 @@
 
             <div class="info-card">
                 <div class="info-card-main">
-                    <span class="info-card-ico tone-teal-soft">
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-                    </span>
+                    <div class="info-card-top">
+                        <span class="info-card-ico tone-teal-soft">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                        </span>
+                        <button type="button" class="card-menu" tabindex="-1">⋮</button>
+                    </div>
                     <div class="info-card-value">{{ activos }}</div>
                     <div class="info-card-label">Con IA activada</div>
                 </div>
@@ -51,13 +58,16 @@
 
             <div class="info-card">
                 <div class="info-card-main">
-                    <span class="info-card-ico tone-violet-soft">
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
-                    </span>
+                    <div class="info-card-top">
+                        <span class="info-card-ico tone-violet-soft">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
+                        </span>
+                        <button type="button" class="card-menu" tabindex="-1">⋮</button>
+                    </div>
                     <div class="info-card-value">{{ events_7d }}</div>
                     <div class="info-card-label">Cambios en 7 días</div>
                 </div>
-                <div class="ring ring-violet" style="--pct: {{ pct_7d }};"><div class="ring-inner">{{ events_7d }}</div></div>
+                <div class="ring ring-violet" style="--pct: {{ pct_7d }};"><div class="ring-inner">{{ pct_7d }}%</div></div>
             </div>
 
             <div class="info-card legend-card">
@@ -76,87 +86,18 @@
             </div>
         </div>
 
-        {# ---------- Fila 2: tarjetas en degradado (actividad por bot) ---------- #}
+        {# ---------- Fila 2: grilla 2x2 en degradado + detalle con gráfico de dona ---------- #}
         {% set tones = ["blue", "purple", "red", "orange"] %}
-        <div class="gradient-grid">
-            {% for bot in bots[:4] %}
-            <div class="gradient-card tone-{{ tones[loop.index0] }}">
-                <div class="gradient-card-value">{{ bot.events }}</div>
-                <div class="gradient-card-label">Eventos — {{ bot.short_name }}</div>
-            </div>
-            {% else %}
-            <div class="empty-state">Sin datos de bots todavía.</div>
-            {% endfor %}
-        </div>
-
-        {# ---------- Fila 3: tabla del equipo + detalle con gráfico de dona ---------- #}
-        <div class="panel-grid">
-            <div class="panel">
-                <h2>Bots del equipo</h2>
-                <div class="db-status">
-                    <span class="db-dot {{ '' if db_status == 'conectada' else 'bad' }}"></span>
-                    Base de datos: {{ db_status }}
+        <div class="overview-grid">
+            <div class="gradient-grid">
+                {% for bot in top_bots[:4] %}
+                <div class="gradient-card tone-{{ tones[loop.index0] }}">
+                    <div class="gradient-card-value">{{ bot.events }}</div>
+                    <div class="gradient-card-label">Eventos — {{ bot.short_name }}</div>
                 </div>
-
-                {% if bots %}
-                <table class="bots-table">
-                    <thead>
-                        <tr>
-                            <th>Bot</th>
-                            <th>IA</th>
-                            <th>Personalidad</th>
-                            <th>Último cambio</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for bot in bots %}
-                        <tr>
-                            <td>
-                                <div class="bot-cell">
-                                    <span class="bot-avatar" style="background: linear-gradient(135deg, {{ bot.color }}, {{ bot.color }}cc);">{{ bot.display_name[0] | upper }}</span>
-                                    <span class="bot-name">{{ bot.display_name }}</span>
-                                </div>
-                            </td>
-                            <td>
-                                <form method="post" action="/bots/{{ bot.slug }}/toggle-ai" class="inline-form">
-                                    <button type="submit" class="pill {{ 'pill-on' if bot.ai_enabled else 'pill-off' }}">
-                                        {{ "Activada" if bot.ai_enabled else "Apagada" }}
-                                    </button>
-                                </form>
-                            </td>
-                            <td>
-                                {% if bot.has_custom_personality %}
-                                    <span class="pill pill-custom">Personalizada</span>
-                                {% else %}
-                                    <span class="pill pill-default">Por defecto (código)</span>
-                                {% endif %}
-                            </td>
-                            <td class="dim">
-                                {% if bot.updated_by %}
-                                    {{ bot.updated_by }} — {{ bot.updated_at.strftime("%d/%m/%Y %H:%M") if bot.updated_at else "" }}
-                                {% else %}
-                                    <span class="dim">sin cambios todavía</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <a class="boton-editar" href="/bots/{{ bot.slug }}">Editar</a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
                 {% else %}
-                <div class="empty-state">No se pudo cargar la lista de bots (revisa el estado de la base de datos arriba).</div>
-                {% endif %}
-
-                <div class="roadmap">
-                    <p class="subtitle" style="margin-bottom:0;">Próximo en el roadmap:</p>
-                    <ul>
-                        <li>Conversaciones automáticas entre bots (límites de turnos y frecuencia)</li>
-                        <li>Canales autorizados y límites configurables desde Configuración</li>
-                    </ul>
-                </div>
+                <div class="empty-state">Sin datos de bots todavía.</div>
+                {% endfor %}
             </div>
 
             <div class="panel">
@@ -183,6 +124,75 @@
                 {% else %}
                 <div class="empty-state">Sin datos de bots para graficar.</div>
                 {% endif %}
+            </div>
+        </div>
+
+        {# ---------- Fila 3: tabla del equipo (gestión completa) ---------- #}
+        <div class="panel" style="margin-bottom: 1.2rem;">
+            <h2>Bots del equipo</h2>
+            <div class="db-status">
+                <span class="db-dot {{ '' if db_status == 'conectada' else 'bad' }}"></span>
+                Base de datos: {{ db_status }}
+            </div>
+
+            {% if bots %}
+            <table class="bots-table">
+                <thead>
+                    <tr>
+                        <th>Bot</th>
+                        <th>IA</th>
+                        <th>Personalidad</th>
+                        <th>Último cambio</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for bot in bots %}
+                    <tr>
+                        <td>
+                            <div class="bot-cell">
+                                <span class="bot-avatar" style="background: linear-gradient(135deg, {{ bot.color }}, {{ bot.color }}cc);">{{ bot.display_name[0] | upper }}</span>
+                                <span class="bot-name">{{ bot.display_name }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <form method="post" action="/bots/{{ bot.slug }}/toggle-ai" class="inline-form">
+                                <button type="submit" class="pill {{ 'pill-on' if bot.ai_enabled else 'pill-off' }}">
+                                    {{ "Activada" if bot.ai_enabled else "Apagada" }}
+                                </button>
+                            </form>
+                        </td>
+                        <td>
+                            {% if bot.has_custom_personality %}
+                                <span class="pill pill-custom">Personalizada</span>
+                            {% else %}
+                                <span class="pill pill-default">Por defecto (código)</span>
+                            {% endif %}
+                        </td>
+                        <td class="dim">
+                            {% if bot.updated_by %}
+                                {{ bot.updated_by }} — {{ bot.updated_at.strftime("%d/%m/%Y %H:%M") if bot.updated_at else "" }}
+                            {% else %}
+                                <span class="dim">sin cambios todavía</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a class="boton-editar" href="/bots/{{ bot.slug }}">Editar</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">No se pudo cargar la lista de bots (revisa el estado de la base de datos arriba).</div>
+            {% endif %}
+
+            <div class="roadmap">
+                <p class="subtitle" style="margin-bottom:0;">Próximo en el roadmap:</p>
+                <ul>
+                    <li>Conversaciones automáticas entre bots (límites de turnos y frecuencia)</li>
+                    <li>Canales autorizados y límites configurables desde Configuración</li>
+                </ul>
             </div>
         </div>
 
