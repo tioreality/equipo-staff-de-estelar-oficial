@@ -20,16 +20,18 @@ Y abrir http://localhost:8000 en el navegador.
 
 import logging
 import secrets
+from datetime import datetime, timedelta
 
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from sqlalchemy import func
 from starlette.middleware.sessions import SessionMiddleware
 
 from .config import PanelConfigError, load_panel_config
 from .auth import AuthError, build_authorize_url, exchange_code_for_user, user_is_admin
-from .bots_registry import BOTS, BOT_SLUGS, display_name_for
+from .bots_registry import BOTS, BOT_SLUGS, display_name_for, short_name_for, color_for
 from shared.db import DBConfigError, get_engine, init_db, session_scope, BotConfig, BotEvent
 
 logging.basicConfig(level=logging.INFO)
@@ -215,20 +217,60 @@ async def dashboard(request: Request):
 
     db_status = "conectada"
     bots = []
+    events_by_day = []
+    total_events = 0
+    events_7d = 0
     try:
         with get_engine().connect():
             pass
         _ensure_bot_rows()
         with session_scope() as session:
+            # Actividad total por bot (para las tarjetas, la leyenda de la
+            # dona y el gráfico de barras) -- todo calculado a partir de
+            # bot_events, ningún dato de ejemplo.
+            eventos_por_bot = dict(
+                session.query(BotEvent.bot_slug, func.count(BotEvent.id))
+                .group_by(BotEvent.bot_slug)
+                .all()
+            )
+            total_events = session.query(func.count(BotEvent.id)).scalar() or 0
+
+            desde_7d = datetime.utcnow() - timedelta(days=7)
+            events_7d = (
+                session.query(func.count(BotEvent.id))
+                .filter(BotEvent.created_at >= desde_7d)
+                .scalar()
+            ) or 0
+
+            # Serie diaria de los últimos 14 días para el gráfico de línea.
+            desde_14d = datetime.utcnow() - timedelta(days=13)
+            conteo_diario = dict(
+                session.query(func.date(BotEvent.created_at), func.count(BotEvent.id))
+                .filter(BotEvent.created_at >= desde_14d)
+                .group_by(func.date(BotEvent.created_at))
+                .all()
+            )
+            for i in range(13, -1, -1):
+                dia = (datetime.utcnow() - timedelta(days=i)).date()
+                events_by_day.append({
+                    "fecha": dia.strftime("%d/%m"),
+                    "cantidad": conteo_diario.get(dia, 0),
+                })
+
             rows = session.query(BotConfig).order_by(BotConfig.id).all()
             for row in rows:
+                cantidad_bot = eventos_por_bot.get(row.bot_slug, 0)
                 bots.append({
                     "slug": row.bot_slug,
                     "display_name": row.display_name or display_name_for(row.bot_slug),
+                    "short_name": short_name_for(row.bot_slug),
+                    "color": color_for(row.bot_slug),
                     "ai_enabled": row.ai_enabled,
                     "has_custom_personality": bool(row.personality_text),
                     "updated_at": row.updated_at,
                     "updated_by": row.updated_by,
+                    "events": cantidad_bot,
+                    "event_pct": round(cantidad_bot / total_events * 100) if total_events else 0,
                 })
     except DBConfigError as e:
         db_status = f"no configurada ({e})"
@@ -243,6 +285,9 @@ async def dashboard(request: Request):
             "avatar_url": request.session.get("avatar_url"),
             "db_status": db_status,
             "bots": bots,
+            "events_by_day": events_by_day,
+            "total_events": total_events,
+            "events_7d": events_7d,
         },
     )
 

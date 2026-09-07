@@ -10,49 +10,86 @@
         <div class="top-bar">
             <div>
                 <h1>Dashboard</h1>
-                <p class="subtitle">Estado y personalidad de los 6 bots del equipo, en vivo.</p>
+                <p class="subtitle">Estado y actividad de los 6 bots del equipo, en vivo.</p>
             </div>
+            {% include "_topbar_actions.html" %}
         </div>
 
         {% set total_bots = bots | length %}
         {% set activos = bots | selectattr("ai_enabled") | list | length %}
         {% set apagados = total_bots - activos %}
+        {% set personalizados = bots | selectattr("has_custom_personality") | list | length %}
+        {% set pct_activos = (activos / total_bots * 100) | round(0) | int if total_bots else 0 %}
+        {% set pct_personalizados = (personalizados / total_bots * 100) | round(0) | int if total_bots else 0 %}
+        {% set pct_7d = ([events_7d * 8, 100] | min) if events_7d else 0 %}
 
-        <div class="stat-grid">
-            <div class="stat-card tone-indigo">
-                <div class="stat-ico">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="4" y="8" width="16" height="12" rx="2"/>
-                        <path d="M12 8V4M9 4h6"/>
-                        <circle cx="9" cy="14" r="1"/>
-                        <circle cx="15" cy="14" r="1"/>
-                        <path d="M2 12h2M20 12h2"/>
-                    </svg>
+        {# ---------- Fila 1: tarjetas de info con anillo de progreso ---------- #}
+        <div class="info-grid">
+            <div class="info-card">
+                <div class="info-card-main">
+                    <span class="info-card-ico tone-indigo-soft">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="4" y="8" width="16" height="12" rx="2"/><path d="M12 8V4M9 4h6"/><circle cx="9" cy="14" r="1"/><circle cx="15" cy="14" r="1"/><path d="M2 12h2M20 12h2"/>
+                        </svg>
+                    </span>
+                    <div class="info-card-value">{{ total_bots }}</div>
+                    <div class="info-card-label">Bots del equipo</div>
                 </div>
-                <div class="stat-value">{{ total_bots }}</div>
-                <div class="stat-label">Bots del equipo</div>
+                <div class="ring ring-indigo" style="--pct: {{ 100 if total_bots else 0 }};"><div class="ring-inner">6/6</div></div>
             </div>
-            <div class="stat-card tone-teal">
-                <div class="stat-ico">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M20 6L9 17l-5-5"/>
-                    </svg>
+
+            <div class="info-card">
+                <div class="info-card-main">
+                    <span class="info-card-ico tone-teal-soft">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                    </span>
+                    <div class="info-card-value">{{ activos }}</div>
+                    <div class="info-card-label">Con IA activada</div>
                 </div>
-                <div class="stat-value">{{ activos }}</div>
-                <div class="stat-label">Con IA activada</div>
+                <div class="ring ring-teal" style="--pct: {{ pct_activos }};"><div class="ring-inner">{{ pct_activos }}%</div></div>
             </div>
-            <div class="stat-card tone-rose">
-                <div class="stat-ico">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="6" y="4" width="4" height="16" rx="1"/>
-                        <rect x="14" y="4" width="4" height="16" rx="1"/>
-                    </svg>
+
+            <div class="info-card">
+                <div class="info-card-main">
+                    <span class="info-card-ico tone-violet-soft">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
+                    </span>
+                    <div class="info-card-value">{{ events_7d }}</div>
+                    <div class="info-card-label">Cambios en 7 días</div>
                 </div>
-                <div class="stat-value">{{ apagados }}</div>
-                <div class="stat-label">Con IA apagada</div>
+                <div class="ring ring-violet" style="--pct: {{ pct_7d }};"><div class="ring-inner">{{ events_7d }}</div></div>
+            </div>
+
+            <div class="info-card legend-card">
+                <div class="ring ring-teal" style="--pct: {{ pct_activos }};"><div class="ring-inner">{{ pct_activos }}%</div></div>
+                <div class="legend-list">
+                    {% for bot in bots %}
+                    <div class="legend-row">
+                        <span class="legend-dot" style="background: {{ bot.color }};"></span>
+                        <span class="legend-name">{{ bot.short_name }}</span>
+                        <span class="legend-val {{ 'ok' if bot.ai_enabled else 'off' }}">{{ "ON" if bot.ai_enabled else "OFF" }}</span>
+                    </div>
+                    {% else %}
+                    <div class="legend-row"><span class="dim">Sin bots cargados</span></div>
+                    {% endfor %}
+                </div>
             </div>
         </div>
 
+        {# ---------- Fila 2: tarjetas en degradado (actividad por bot) ---------- #}
+        {% set tones = ["blue", "purple", "red", "orange"] %}
+        <div class="gradient-grid">
+            {% for bot in bots[:4] %}
+            <div class="gradient-card tone-{{ tones[loop.index0] }}">
+                <div class="gradient-card-value">{{ bot.events }}</div>
+                <div class="gradient-card-label">Eventos — {{ bot.short_name }}</div>
+            </div>
+            {% else %}
+            <div class="empty-state">Sin datos de bots todavía.</div>
+            {% endfor %}
+        </div>
+
+        {# ---------- Fila 3: tabla del equipo + detalle con gráfico de dona ---------- #}
         <div class="panel-grid">
             <div class="panel">
                 <h2>Bots del equipo</h2>
@@ -77,7 +114,7 @@
                         <tr>
                             <td>
                                 <div class="bot-cell">
-                                    <span class="bot-avatar">{{ bot.display_name[0] | upper }}</span>
+                                    <span class="bot-avatar" style="background: linear-gradient(135deg, {{ bot.color }}, {{ bot.color }}cc);">{{ bot.display_name[0] | upper }}</span>
                                     <span class="bot-name">{{ bot.display_name }}</span>
                                 </div>
                             </td>
@@ -116,19 +153,55 @@
                 <div class="roadmap">
                     <p class="subtitle" style="margin-bottom:0;">Próximo en el roadmap:</p>
                     <ul>
-                        <li>Registro de actividad / logs por bot</li>
                         <li>Conversaciones automáticas entre bots (límites de turnos y frecuencia)</li>
+                        <li>Canales autorizados y límites configurables desde Configuración</li>
                     </ul>
                 </div>
             </div>
 
             <div class="panel">
-                <h2>IA activada vs. apagada</h2>
+                <h2>Detalle por bot</h2>
                 {% if total_bots > 0 %}
-                <canvas id="estadoChart" height="220"></canvas>
-                <p class="panel-note">Gráfico de ejemplo/visual, calculado a partir del estado real de los {{ total_bots }} bots — no representa datos históricos todavía.</p>
+                <div class="detail-body">
+                    <table class="detail-table">
+                        <thead><tr><th>Bot</th><th>Eventos</th><th>%</th></tr></thead>
+                        <tbody>
+                            {% for bot in bots %}
+                            <tr>
+                                <td><span class="legend-dot" style="background: {{ bot.color }};"></span>{{ bot.short_name }}</td>
+                                <td>{{ bot.events }}</td>
+                                <td>{{ bot.event_pct }}%</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    <div class="donut-wrap">
+                        <canvas id="detalleChart" height="170"></canvas>
+                    </div>
+                </div>
+                <p class="panel-note">{{ total_events }} eventos registrados en total desde que existe el panel.</p>
                 {% else %}
                 <div class="empty-state">Sin datos de bots para graficar.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        {# ---------- Fila 4: gráficos de actividad ---------- #}
+        <div class="chart-grid">
+            <div class="panel">
+                <h2>Actividad por bot</h2>
+                {% if bots %}
+                <canvas id="actividadBotChart" height="210"></canvas>
+                {% else %}
+                <div class="empty-state">Sin datos para graficar.</div>
+                {% endif %}
+            </div>
+            <div class="panel">
+                <h2>Actividad — últimos 14 días</h2>
+                {% if bots %}
+                <canvas id="actividadDiaChart" height="210"></canvas>
+                {% else %}
+                <div class="empty-state">Sin datos para graficar.</div>
                 {% endif %}
             </div>
         </div>
@@ -141,39 +214,121 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
     (function () {
-        var ctx = document.getElementById("estadoChart");
-        if (!ctx) return;
-
         function isDark() {
             return document.documentElement.getAttribute("data-theme") === "dark";
         }
+        function textColor() { return isDark() ? "#f1f2f8" : "#1f2333"; }
+        function dimColor() { return isDark() ? "#9a9db3" : "#6b7086"; }
+        function gridColor() { return isDark() ? "rgba(255,255,255,0.06)" : "rgba(31,35,51,0.06)"; }
 
-        var chart = new Chart(ctx, {
-            type: "doughnut",
-            data: {
-                labels: ["IA activada", "IA apagada"],
-                datasets: [{
-                    data: [{{ activos }}, {{ apagados }}],
-                    backgroundColor: ["#14b8a6", "#f43f5e"],
-                    borderWidth: 0,
-                }],
-            },
-            options: {
-                cutout: "68%",
-                plugins: {
-                    legend: {
-                        position: "bottom",
-                        labels: { color: isDark() ? "#f1f2f8" : "#1f2333", boxWidth: 12, padding: 14 },
+        var botLabels = [{% for bot in bots %}"{{ bot.short_name | e }}"{{ "," if not loop.last }}{% endfor %}];
+        var botEventos = [{% for bot in bots %}{{ bot.events }}{{ "," if not loop.last }}{% endfor %}];
+        var botColores = [{% for bot in bots %}"{{ bot.color }}"{{ "," if not loop.last }}{% endfor %}];
+        var totalEventos = {{ total_events }};
+
+        var diaLabels = [{% for d in events_by_day %}"{{ d.fecha }}"{{ "," if not loop.last }}{% endfor %}];
+        var diaData = [{% for d in events_by_day %}{{ d.cantidad }}{{ "," if not loop.last }}{% endfor %}];
+
+        var chartsToRestyle = [];
+
+        // ---- Dona: distribución de eventos por bot ----
+        var ctxDetalle = document.getElementById("detalleChart");
+        if (ctxDetalle) {
+            var centerTextPlugin = {
+                id: "centerText",
+                afterDraw: function (chart) {
+                    var ctx = chart.ctx;
+                    var area = chart.chartArea;
+                    var cx = (area.left + area.right) / 2;
+                    var cy = (area.top + area.bottom) / 2;
+                    ctx.save();
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+                    ctx.fillStyle = textColor();
+                    ctx.font = "700 20px 'Segoe UI', sans-serif";
+                    ctx.fillText(totalEventos, cx, cy - 8);
+                    ctx.fillStyle = dimColor();
+                    ctx.font = "500 11px 'Segoe UI', sans-serif";
+                    ctx.fillText("eventos", cx, cy + 12);
+                    ctx.restore();
+                },
+            };
+            var detalleChart = new Chart(ctxDetalle, {
+                type: "doughnut",
+                data: {
+                    labels: botLabels,
+                    datasets: [{ data: botEventos, backgroundColor: botColores, borderWidth: 0 }],
+                },
+                options: { cutout: "70%", plugins: { legend: { display: false } } },
+                plugins: [centerTextPlugin],
+            });
+            chartsToRestyle.push(function () { detalleChart.update(); });
+        }
+
+        // ---- Barras: actividad por bot ----
+        var ctxBot = document.getElementById("actividadBotChart");
+        if (ctxBot) {
+            var actividadBotChart = new Chart(ctxBot, {
+                type: "bar",
+                data: {
+                    labels: botLabels,
+                    datasets: [{ data: botEventos, backgroundColor: botColores, borderRadius: 8, maxBarThickness: 46 }],
+                },
+                options: {
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: dimColor() }, grid: { display: false } },
+                        y: { beginAtZero: true, ticks: { color: dimColor(), precision: 0 }, grid: { color: gridColor() } },
                     },
                 },
-            },
-        });
+            });
+            chartsToRestyle.push(function () {
+                actividadBotChart.options.scales.x.ticks.color = dimColor();
+                actividadBotChart.options.scales.y.ticks.color = dimColor();
+                actividadBotChart.options.scales.y.grid.color = gridColor();
+                actividadBotChart.update();
+            });
+        }
 
-        // Recolorea las leyendas si el usuario cambia de tema sin recargar.
+        // ---- Línea: actividad de los últimos 14 días ----
+        var ctxDia = document.getElementById("actividadDiaChart");
+        if (ctxDia) {
+            var gradient = ctxDia.getContext("2d").createLinearGradient(0, 0, 0, 210);
+            gradient.addColorStop(0, "rgba(99, 102, 241, 0.35)");
+            gradient.addColorStop(1, "rgba(99, 102, 241, 0)");
+            var actividadDiaChart = new Chart(ctxDia, {
+                type: "line",
+                data: {
+                    labels: diaLabels,
+                    datasets: [{
+                        data: diaData,
+                        borderColor: "#6366f1",
+                        backgroundColor: gradient,
+                        fill: true,
+                        tension: 0.35,
+                        pointRadius: 3,
+                        pointBackgroundColor: "#6366f1",
+                    }],
+                },
+                options: {
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: dimColor(), maxRotation: 0, autoSkip: true, maxTicksLimit: 7 }, grid: { display: false } },
+                        y: { beginAtZero: true, ticks: { color: dimColor(), precision: 0 }, grid: { color: gridColor() } },
+                    },
+                },
+            });
+            chartsToRestyle.push(function () {
+                actividadDiaChart.options.scales.x.ticks.color = dimColor();
+                actividadDiaChart.options.scales.y.ticks.color = dimColor();
+                actividadDiaChart.options.scales.y.grid.color = gridColor();
+                actividadDiaChart.update();
+            });
+        }
+
         document.querySelectorAll("[data-theme-btn]").forEach(function (btn) {
             btn.addEventListener("click", function () {
-                chart.options.plugins.legend.labels.color = isDark() ? "#f1f2f8" : "#1f2333";
-                chart.update();
+                chartsToRestyle.forEach(function (fn) { fn(); });
             });
         });
     })();

@@ -1,0 +1,19 @@
+{# Acciones del header (buscador, notificaciones, avatar) -- compartidas entre
+   dashboard.html, logs.html, config.html y edit_bot.html. El buscador y la
+   campana son decorativos por ahora (deshabilitados a propósito, para no
+   simular una función que todavía no existe); el avatar sí es el real de
+   la sesión de Discord. #}
+<div class="topbar-actions">
+    <label class="search-box">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-3.8-3.8"/></svg>
+        <input type="text" placeholder="Buscar en el panel..." disabled>
+    </label>
+    <button type="button" class="icon-btn" title="Notificaciones (próximamente)" disabled>
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+    </button>
+    {% if avatar_url %}
+        <img class="topbar-avatar" src="{{ avatar_url }}" alt="{{ username }}">
+    {% else %}
+        <span class="topbar-avatar topbar-avatar-fallback">{{ (username or "A")[0] | upper }}</span>
+    {% endif %}
+</div>

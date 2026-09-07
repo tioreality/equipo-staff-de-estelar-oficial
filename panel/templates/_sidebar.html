@@ -9,6 +9,18 @@
         Staff Estelar
     </div>
 
+    <div class="profile-card">
+        {% if avatar_url %}
+            <img class="profile-card-avatar" src="{{ avatar_url }}" alt="{{ username }}">
+        {% else %}
+            <span class="profile-card-avatar profile-card-avatar-fallback">{{ (username or "A")[0] | upper }}</span>
+        {% endif %}
+        <div class="profile-card-info">
+            <div class="profile-card-name">{{ username or "Administrador" }}</div>
+            <div class="profile-card-role">Staff de Estelar Oficial</div>
+        </div>
+    </div>
+
     <nav class="nav">
         <a class="nav-item {{ 'active' if active_nav == 'dashboard' else '' }}" href="/dashboard">
             <span class="ico">
@@ -53,14 +65,9 @@
                 Oscuro
             </button>
         </div>
-        <div class="user-chip">
-            {% if avatar_url %}
-                <img class="user-avatar-img" src="{{ avatar_url }}" alt="{{ username }}">
-            {% else %}
-                <span class="user-avatar">{{ (username or "A")[0] | upper }}</span>
-            {% endif %}
-            <span>{{ username }}</span>
-        </div>
-        <a class="salir" href="/logout">Cerrar sesión</a>
+        <a class="salir" href="/logout">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+            Cerrar sesión
+        </a>
     </div>
 </aside>
