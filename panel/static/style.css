@@ -326,7 +326,7 @@ a { color: inherit; }
 }
 
 .stat-card .stat-ico {
-    font-size: 1.3rem;
+    display: inline-flex;
     opacity: 0.9;
 }
 
