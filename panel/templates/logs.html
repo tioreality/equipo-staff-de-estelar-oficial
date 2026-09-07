@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Logs — Panel del Equipo Estelar{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+    {% set active_nav = "logs" %}
+    {% include "_sidebar.html" %}
+
+    <div class="content">
+        <div class="top-bar">
+            <div>
+                <h1>Logs</h1>
+                <p class="subtitle">Últimos cambios hechos desde este panel (activar/desactivar IA, editar personalidad).</p>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="db-status">
+                <span class="db-dot {{ '' if db_status == 'conectada' else 'bad' }}"></span>
+                Base de datos: {{ db_status }}
+            </div>
+
+            {% if events %}
+            <table class="bots-table">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Bot</th>
+                        <th>Evento</th>
+                        <th>Descripción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ev in events %}
+                    <tr>
+                        <td class="dim">{{ ev.created_at.strftime("%d/%m/%Y %H:%M") if ev.created_at else "" }}</td>
+                        <td class="bot-name">{{ ev.bot_display_name or "—" }}</td>
+                        <td><span class="pill pill-default">{{ ev.event_type }}</span></td>
+                        <td>{{ ev.description }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                Todavía no hay eventos registrados. Aquí aparecerá cada vez que alguien active/desactive
+                la IA de un bot o edite su personalidad desde este panel.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

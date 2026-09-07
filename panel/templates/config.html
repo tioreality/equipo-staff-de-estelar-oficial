@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Configuración — Panel del Equipo Estelar{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+    {% set active_nav = "config" %}
+    {% include "_sidebar.html" %}
+
+    <div class="content">
+        <div class="top-bar">
+            <div>
+                <h1>Configuración</h1>
+                <p class="subtitle">Ajustes generales del equipo de bots.</p>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="empty-state">
+                Esta sección está en construcción. Próximamente podrás ajustar aquí cosas como
+                canales autorizados, límites de conversación entre bots y otras opciones generales
+                del equipo — por ahora, esos valores se configuran directamente en las variables
+                de entorno de cada bot.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

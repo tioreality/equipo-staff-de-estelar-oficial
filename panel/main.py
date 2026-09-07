@@ -170,8 +170,32 @@ async def auth_callback(request: Request, code: str = "", state: str = "", error
 
     request.session["user_id"] = discord_user["id"]
     request.session["username"] = discord_user.get("username", "Admin")
+    request.session["avatar_url"] = _discord_avatar_url(discord_user)
     logger.info("Login exitoso en el panel: %s (%s)", discord_user.get("username"), discord_user["id"])
     return RedirectResponse("/dashboard")
+
+
+def _discord_avatar_url(discord_user: dict) -> str:
+    """
+    Arma la URL pública de la foto de perfil de Discord del usuario.
+    Si no tiene avatar propio (cuenta nueva o sin foto), cae al avatar
+    por defecto que asigna Discord según su discriminador/ID -- nunca
+    queda una imagen rota.
+    """
+    user_id = discord_user.get("id", "")
+    avatar_hash = discord_user.get("avatar")
+    if avatar_hash:
+        ext = "gif" if avatar_hash.startswith("a_") else "png"
+        return f"https://cdn.discordapp.com/avatars/{user_id}/{avatar_hash}.{ext}?size=64"
+
+    # Avatar por defecto: para cuentas nuevas (sistema de username sin
+    # discriminador) Discord usa (id >> 22) % 6; mantenemos un cálculo
+    # simple y seguro que nunca lanza excepción.
+    try:
+        default_index = (int(user_id) >> 22) % 6
+    except (TypeError, ValueError):
+        default_index = 0
+    return f"https://cdn.discordapp.com/embed/avatars/{default_index}.png"
 
 
 @app.get("/logout")
@@ -216,8 +240,74 @@ async def dashboard(request: Request):
         "dashboard.html",
         {
             "username": request.session.get("username"),
+            "avatar_url": request.session.get("avatar_url"),
             "db_status": db_status,
             "bots": bots,
+        },
+    )
+
+
+@app.get("/logs", response_class=HTMLResponse)
+async def logs(request: Request):
+    error = _config_check(request)
+    if error:
+        return error
+    redirect = _require_login(request)
+    if redirect:
+        return redirect
+
+    db_status = "conectada"
+    events = []
+    try:
+        with get_engine().connect():
+            pass
+        with session_scope() as session:
+            rows = (
+                session.query(BotEvent)
+                .order_by(BotEvent.created_at.desc())
+                .limit(100)
+                .all()
+            )
+            for row in rows:
+                events.append({
+                    "created_at": row.created_at,
+                    "bot_slug": row.bot_slug,
+                    "bot_display_name": display_name_for(row.bot_slug) if row.bot_slug else None,
+                    "event_type": row.event_type,
+                    "description": row.description,
+                })
+    except DBConfigError as e:
+        db_status = f"no configurada ({e})"
+    except Exception as e:
+        db_status = f"error de conexión ({e})"
+
+    return templates.TemplateResponse(
+        request,
+        "logs.html",
+        {
+            "username": request.session.get("username"),
+            "avatar_url": request.session.get("avatar_url"),
+            "db_status": db_status,
+            "events": events,
+        },
+    )
+
+
+@app.get("/config", response_class=HTMLResponse)
+async def config_page(request: Request):
+    error = _config_check(request)
+    if error:
+        return error
+    redirect = _require_login(request)
+    if redirect:
+        return redirect
+
+    return templates.TemplateResponse(
+        request,
+        "config.html",
+        {
+            "username": request.session.get("username"),
+            "avatar_url": request.session.get("avatar_url"),
         },
     )
 
@@ -262,7 +352,12 @@ async def edit_bot(request: Request, bot_slug: str):
     return templates.TemplateResponse(
         request,
         "edit_bot.html",
-        {"bot": bot, "saved": False, "username": request.session.get("username")},
+        {
+            "bot": bot,
+            "saved": False,
+            "username": request.session.get("username"),
+            "avatar_url": request.session.get("avatar_url"),
+        },
     )
 
 
@@ -329,7 +424,12 @@ async def save_bot(
     return templates.TemplateResponse(
         request,
         "edit_bot.html",
-        {"bot": bot, "saved": True, "username": request.session.get("username")},
+        {
+            "bot": bot,
+            "saved": True,
+            "username": request.session.get("username"),
+            "avatar_url": request.session.get("avatar_url"),
+        },
     )
 
 
