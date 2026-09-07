@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Editar {{ bot.display_name }} — Panel del Equipo Estelar{% endblock %}
+{% block content %}
+<div class="card wide">
+    <div class="top-bar">
+        <h1>✏️ {{ bot.display_name }}</h1>
+        <a class="salir" href="/dashboard">← Volver al dashboard</a>
+    </div>
+
+    {% if saved %}
+    <div class="banner-ok">Guardado correctamente. Este bot usará estos valores en su próxima respuesta.</div>
+    {% endif %}
+
+    <form method="post" action="/bots/{{ bot.slug }}" class="edit-form">
+        <label class="switch-row">
+            <input type="checkbox" name="ai_enabled" {{ "checked" if bot.ai_enabled else "" }}>
+            <span>Respuestas de IA activadas para este bot</span>
+        </label>
+
+        <div class="field">
+            <label for="personality_text">Personalidad (texto completo)</label>
+            <textarea id="personality_text" name="personality_text" rows="10" placeholder="Déjalo vacío para usar el texto fijo que ya trae el código de este bot (bot/personalidad.py).">{{ bot.personality_text }}</textarea>
+            <p class="hint">Si escribes algo aquí, reemplaza por completo el texto de personalidad del código. Vacío = usa el del código.</p>
+        </div>
+
+        <div class="field">
+            <label for="tone">Tono</label>
+            <input type="text" id="tone" name="tone" value="{{ bot.tone }}" placeholder="ej: directo, organizado, con autoridad tranquila">
+        </div>
+
+        <div class="field">
+            <label for="language">Idioma</label>
+            <input type="text" id="language" name="language" value="{{ bot.language }}" placeholder="ej: español neutro">
+        </div>
+
+        <div class="field">
+            <label for="allowed_topics">Temas permitidos</label>
+            <textarea id="allowed_topics" name="allowed_topics" rows="2">{{ bot.allowed_topics }}</textarea>
+        </div>
+
+        <div class="field">
+            <label for="forbidden_topics">Temas prohibidos / a evitar</label>
+            <textarea id="forbidden_topics" name="forbidden_topics" rows="2">{{ bot.forbidden_topics }}</textarea>
+        </div>
+
+        <button type="submit" class="boton-guardar">Guardar cambios</button>
+    </form>
+</div>
+{% endblock %}

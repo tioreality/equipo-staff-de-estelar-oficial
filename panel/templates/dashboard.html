@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Panel del Equipo Estelar{% endblock %}
+{% block content %}
+<div class="card wide">
+    <div class="top-bar">
+        <h1>⭐ Bienvenido, {{ username }}</h1>
+        <a class="salir" href="/logout">Cerrar sesión</a>
+    </div>
+    <p>Estado de la base de datos: <strong>{{ db_status }}</strong></p>
+
+    {% if bots %}
+    <table class="bots-table">
+        <thead>
+            <tr>
+                <th>Bot</th>
+                <th>IA</th>
+                <th>Personalidad</th>
+                <th>Último cambio</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for bot in bots %}
+            <tr>
+                <td class="bot-name">{{ bot.display_name }}</td>
+                <td>
+                    <form method="post" action="/bots/{{ bot.slug }}/toggle-ai" class="inline-form">
+                        <button type="submit" class="pill {{ 'pill-on' if bot.ai_enabled else 'pill-off' }}">
+                            {{ "Activada" if bot.ai_enabled else "Apagada" }}
+                        </button>
+                    </form>
+                </td>
+                <td>
+                    {% if bot.has_custom_personality %}
+                        <span class="pill pill-custom">Personalizada</span>
+                    {% else %}
+                        <span class="pill pill-default">Por defecto (código)</span>
+                    {% endif %}
+                </td>
+                <td class="dim">
+                    {% if bot.updated_by %}
+                        {{ bot.updated_by }} — {{ bot.updated_at.strftime("%d/%m/%Y %H:%M") if bot.updated_at else "" }}
+                    {% else %}
+                        <span class="dim">sin cambios todavía</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a class="boton-editar" href="/bots/{{ bot.slug }}">Editar</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="dim">No se pudo cargar la lista de bots (revisa el estado de la base de datos arriba).</p>
+    {% endif %}
+
+    <div class="proximamente">
+        <p>Próximo en el roadmap:</p>
+        <ul>
+            <li>Registro de actividad / logs por bot</li>
+            <li>Conversaciones automáticas entre bots (límites de turnos y frecuencia)</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
