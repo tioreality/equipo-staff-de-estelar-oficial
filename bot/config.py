@@ -49,6 +49,13 @@ class Config:
     # editable desde un panel web.
     allowed_channel_ids: frozenset[int]
 
+    # Limites para imagenes adjuntas (el bot puede "ver" imagenes que
+    # le manden junto con una mencion). Protegen contra archivos muy
+    # pesados o muchos adjuntos en un solo mensaje, que disparan el
+    # costo de la API.
+    max_image_size_mb: int
+    max_images_per_message: int
+
 
 def _get_optional_int(name: str) -> int | None:
     raw = os.getenv(name, "").strip()
@@ -122,6 +129,9 @@ def load_config() -> Config:
 
     allowed_channel_ids = _parse_channel_ids(os.getenv("ALLOWED_CHANNEL_IDS", ""))
 
+    max_image_size_mb = _get_positive_int("MAX_IMAGE_SIZE_MB", 5)
+    max_images_per_message = _get_positive_int("MAX_IMAGES_PER_MESSAGE", 3)
+
     return Config(
         discord_token=token,
         command_prefix=prefix,
@@ -133,4 +143,6 @@ def load_config() -> Config:
         ai_cooldown_seconds=ai_cooldown_seconds,
         ai_max_responses_per_minute=ai_max_responses_per_minute,
         allowed_channel_ids=allowed_channel_ids,
+        max_image_size_mb=max_image_size_mb,
+        max_images_per_message=max_images_per_message,
     )

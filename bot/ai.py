@@ -64,16 +64,32 @@ def build_system_prompt(personality: ActivePersonality) -> str:
     return "\n".join(parts)
 
 
-async def generate_response(config: Config, personality: ActivePersonality, user_message: str) -> str:
-    """Llama a la API de Claude y devuelve el texto de la respuesta."""
+async def generate_response(
+    config: Config,
+    personality: ActivePersonality,
+    user_message: str,
+    images: list[dict] | None = None,
+) -> str:
+    """Llama a la API de Claude y devuelve el texto de la respuesta.
+
+    Si `images` trae bloques de imagen (ver bot/images.py), se
+    mandan junto con el texto en el mismo mensaje -- Claude puede
+    "ver" y comentar el contenido de esas imágenes.
+    """
     client = _get_client(config)
     system_prompt = build_system_prompt(personality)
+
+    content: list[dict] | str
+    if images:
+        content = [*images, {"type": "text", "text": user_message}]
+    else:
+        content = user_message
 
     response = await client.messages.create(
         model=config.anthropic_model,
         max_tokens=400,
         system=system_prompt,
-        messages=[{"role": "user", "content": user_message}],
+        messages=[{"role": "user", "content": content}],
     )
 
     text = "".join(

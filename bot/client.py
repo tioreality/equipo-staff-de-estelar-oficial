@@ -32,6 +32,7 @@ from discord.ext import commands
 from . import antispam
 from .ai import generate_response
 from .config import Config
+from .images import collect_images
 from .personalidad import get_active_personality
 
 # Interruptor de IA en memoria (sin base de datos todavia): se reinicia
@@ -58,8 +59,18 @@ async def _handle_ai_mention(bot: commands.Bot, config: Config, message: discord
         content = content.replace(mention, "")
     content = content.strip()
 
+    images = await collect_images(
+        message,
+        max_images=config.max_images_per_message,
+        max_size_mb=config.max_image_size_mb,
+    )
+
     if not content:
-        content = "(la persona solo te mencionó, sin escribir nada más -- salúdala)"
+        content = (
+            "(la persona te mandó una o más imágenes sin escribir nada más -- coméntalas)"
+            if images
+            else "(la persona solo te mencionó, sin escribir nada más -- salúdala)"
+        )
 
     if len(content) > 800:
         await message.channel.send(
@@ -87,7 +98,7 @@ async def _handle_ai_mention(bot: commands.Bot, config: Config, message: discord
 
     async with message.channel.typing():
         try:
-            reply = await generate_response(config, personality, content)
+            reply = await generate_response(config, personality, content, images=images)
         except Exception as e:
             logger.error("Error llamando a la API de Claude: %s", e)
             await message.channel.send(

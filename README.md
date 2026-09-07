@@ -16,6 +16,9 @@ propósito distintos.
   canal autorizado.
 - ✅ Anti-spam: cooldown, límite por minuto, canales autorizados,
   mensajes repetidos, interruptor `!jefe on/off/estado` (solo Admins).
+- ✅ Puede "ver" imágenes: si le mandas una imagen adjunta junto con la
+  mención, la analiza y comenta con IA (límite de tamaño y de cantidad
+  configurables en `.env` — `MAX_IMAGE_SIZE_MB`, `MAX_IMAGES_PER_MESSAGE`).
 - ⏳ Sin base de datos ni panel web todavía — la personalidad vive en
   `bot/personalidad.py` (código), y el interruptor de IA se reinicia
   al reiniciar el bot.
