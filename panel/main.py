@@ -259,7 +259,11 @@ async def edit_bot(request: Request, bot_slug: str):
             status_code=500,
         )
 
-    return templates.TemplateResponse(request, "edit_bot.html", {"bot": bot, "saved": False})
+    return templates.TemplateResponse(
+        request,
+        "edit_bot.html",
+        {"bot": bot, "saved": False, "username": request.session.get("username")},
+    )
 
 
 @app.post("/bots/{bot_slug}", response_class=HTMLResponse)
@@ -322,7 +326,11 @@ async def save_bot(
             status_code=500,
         )
 
-    return templates.TemplateResponse(request, "edit_bot.html", {"bot": bot, "saved": True})
+    return templates.TemplateResponse(
+        request,
+        "edit_bot.html",
+        {"bot": bot, "saved": True, "username": request.session.get("username")},
+    )
 
 
 @app.post("/bots/{bot_slug}/toggle-ai")

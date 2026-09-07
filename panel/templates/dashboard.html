@@ -1,66 +1,165 @@
 {% extends "base.html" %}
 {% block title %}Dashboard — Panel del Equipo Estelar{% endblock %}
-{% block content %}
-<div class="card wide">
-    <div class="top-bar">
-        <h1>⭐ Bienvenido, {{ username }}</h1>
-        <a class="salir" href="/logout">Cerrar sesión</a>
-    </div>
-    <p>Estado de la base de datos: <strong>{{ db_status }}</strong></p>
 
-    {% if bots %}
-    <table class="bots-table">
-        <thead>
-            <tr>
-                <th>Bot</th>
-                <th>IA</th>
-                <th>Personalidad</th>
-                <th>Último cambio</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for bot in bots %}
-            <tr>
-                <td class="bot-name">{{ bot.display_name }}</td>
-                <td>
-                    <form method="post" action="/bots/{{ bot.slug }}/toggle-ai" class="inline-form">
-                        <button type="submit" class="pill {{ 'pill-on' if bot.ai_enabled else 'pill-off' }}">
-                            {{ "Activada" if bot.ai_enabled else "Apagada" }}
-                        </button>
-                    </form>
-                </td>
-                <td>
-                    {% if bot.has_custom_personality %}
-                        <span class="pill pill-custom">Personalizada</span>
-                    {% else %}
-                        <span class="pill pill-default">Por defecto (código)</span>
-                    {% endif %}
-                </td>
-                <td class="dim">
-                    {% if bot.updated_by %}
-                        {{ bot.updated_by }} — {{ bot.updated_at.strftime("%d/%m/%Y %H:%M") if bot.updated_at else "" }}
-                    {% else %}
-                        <span class="dim">sin cambios todavía</span>
-                    {% endif %}
-                </td>
-                <td>
-                    <a class="boton-editar" href="/bots/{{ bot.slug }}">Editar</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-    <p class="dim">No se pudo cargar la lista de bots (revisa el estado de la base de datos arriba).</p>
-    {% endif %}
+{% block body %}
+<div class="app-shell">
+    {% set active_nav = "dashboard" %}
+    {% include "_sidebar.html" %}
 
-    <div class="proximamente">
-        <p>Próximo en el roadmap:</p>
-        <ul>
-            <li>Registro de actividad / logs por bot</li>
-            <li>Conversaciones automáticas entre bots (límites de turnos y frecuencia)</li>
-        </ul>
+    <div class="content">
+        <div class="top-bar">
+            <div>
+                <h1>Dashboard</h1>
+                <p class="subtitle">Estado y personalidad de los 6 bots del equipo, en vivo.</p>
+            </div>
+        </div>
+
+        {% set total_bots = bots | length %}
+        {% set activos = bots | selectattr("ai_enabled") | list | length %}
+        {% set apagados = total_bots - activos %}
+
+        <div class="stat-grid">
+            <div class="stat-card tone-indigo">
+                <div class="stat-ico">🤖</div>
+                <div class="stat-value">{{ total_bots }}</div>
+                <div class="stat-label">Bots del equipo</div>
+            </div>
+            <div class="stat-card tone-teal">
+                <div class="stat-ico">✅</div>
+                <div class="stat-value">{{ activos }}</div>
+                <div class="stat-label">Con IA activada</div>
+            </div>
+            <div class="stat-card tone-rose">
+                <div class="stat-ico">⏸️</div>
+                <div class="stat-value">{{ apagados }}</div>
+                <div class="stat-label">Con IA apagada</div>
+            </div>
+        </div>
+
+        <div class="panel-grid">
+            <div class="panel">
+                <h2>Bots del equipo</h2>
+                <div class="db-status">
+                    <span class="db-dot {{ '' if db_status == 'conectada' else 'bad' }}"></span>
+                    Base de datos: {{ db_status }}
+                </div>
+
+                {% if bots %}
+                <table class="bots-table">
+                    <thead>
+                        <tr>
+                            <th>Bot</th>
+                            <th>IA</th>
+                            <th>Personalidad</th>
+                            <th>Último cambio</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for bot in bots %}
+                        <tr>
+                            <td>
+                                <div class="bot-cell">
+                                    <span class="bot-avatar">{{ bot.display_name[0] | upper }}</span>
+                                    <span class="bot-name">{{ bot.display_name }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <form method="post" action="/bots/{{ bot.slug }}/toggle-ai" class="inline-form">
+                                    <button type="submit" class="pill {{ 'pill-on' if bot.ai_enabled else 'pill-off' }}">
+                                        {{ "Activada" if bot.ai_enabled else "Apagada" }}
+                                    </button>
+                                </form>
+                            </td>
+                            <td>
+                                {% if bot.has_custom_personality %}
+                                    <span class="pill pill-custom">Personalizada</span>
+                                {% else %}
+                                    <span class="pill pill-default">Por defecto (código)</span>
+                                {% endif %}
+                            </td>
+                            <td class="dim">
+                                {% if bot.updated_by %}
+                                    {{ bot.updated_by }} — {{ bot.updated_at.strftime("%d/%m/%Y %H:%M") if bot.updated_at else "" }}
+                                {% else %}
+                                    <span class="dim">sin cambios todavía</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a class="boton-editar" href="/bots/{{ bot.slug }}">Editar</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="empty-state">No se pudo cargar la lista de bots (revisa el estado de la base de datos arriba).</div>
+                {% endif %}
+
+                <div class="roadmap">
+                    <p class="subtitle" style="margin-bottom:0;">Próximo en el roadmap:</p>
+                    <ul>
+                        <li>Registro de actividad / logs por bot</li>
+                        <li>Conversaciones automáticas entre bots (límites de turnos y frecuencia)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>IA activada vs. apagada</h2>
+                {% if total_bots > 0 %}
+                <canvas id="estadoChart" height="220"></canvas>
+                <p class="panel-note">Gráfico de ejemplo/visual, calculado a partir del estado real de los {{ total_bots }} bots — no representa datos históricos todavía.</p>
+                {% else %}
+                <div class="empty-state">Sin datos de bots para graficar.</div>
+                {% endif %}
+            </div>
+        </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+{% if bots %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script>
+    (function () {
+        var ctx = document.getElementById("estadoChart");
+        if (!ctx) return;
+
+        function isDark() {
+            return document.documentElement.getAttribute("data-theme") === "dark";
+        }
+
+        var chart = new Chart(ctx, {
+            type: "doughnut",
+            data: {
+                labels: ["IA activada", "IA apagada"],
+                datasets: [{
+                    data: [{{ activos }}, {{ apagados }}],
+                    backgroundColor: ["#14b8a6", "#f43f5e"],
+                    borderWidth: 0,
+                }],
+            },
+            options: {
+                cutout: "68%",
+                plugins: {
+                    legend: {
+                        position: "bottom",
+                        labels: { color: isDark() ? "#f1f2f8" : "#1f2333", boxWidth: 12, padding: 14 },
+                    },
+                },
+            },
+        });
+
+        // Recolorea las leyendas si el usuario cambia de tema sin recargar.
+        document.querySelectorAll("[data-theme-btn]").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+                chart.options.plugins.legend.labels.color = isDark() ? "#f1f2f8" : "#1f2333";
+                chart.update();
+            });
+        });
+    })();
+</script>
+{% endif %}
 {% endblock %}

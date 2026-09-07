@@ -5,10 +5,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Panel del Equipo Estelar{% endblock %}</title>
     <link rel="stylesheet" href="/static/style.css">
+    <script>
+        // Aplica el tema guardado ANTES de pintar la página, para evitar
+        // un parpadeo de claro -> oscuro al cargar.
+        (function () {
+            try {
+                var saved = localStorage.getItem("estelar-theme");
+                if (saved === "dark" || saved === "light") {
+                    document.documentElement.setAttribute("data-theme", saved);
+                }
+            } catch (e) {}
+        })();
+    </script>
 </head>
 <body>
-    <main class="container">
+    {% block body %}
+    <div class="container centered">
         {% block content %}{% endblock %}
-    </main>
+    </div>
+    {% endblock %}
+
+    <script>
+        function estelarSetTheme(theme) {
+            document.documentElement.setAttribute("data-theme", theme);
+            try { localStorage.setItem("estelar-theme", theme); } catch (e) {}
+            document.querySelectorAll("[data-theme-btn]").forEach(function (btn) {
+                btn.classList.toggle("active", btn.getAttribute("data-theme-btn") === theme);
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            var current = document.documentElement.getAttribute("data-theme") || "light";
+            document.querySelectorAll("[data-theme-btn]").forEach(function (btn) {
+                btn.classList.toggle("active", btn.getAttribute("data-theme-btn") === current);
+                btn.addEventListener("click", function () {
+                    estelarSetTheme(btn.getAttribute("data-theme-btn"));
+                });
+            });
+        });
+    </script>
+    {% block scripts %}{% endblock %}
 </body>
 </html>
